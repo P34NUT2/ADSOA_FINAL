@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.up.cd</groupId>
-    <artifactId>CELL</artifactId>
+    <artifactId>SERVER_CELL</artifactId>
     <version>1.0.0</version>
 
     <dependencies>
@@ -58,7 +58,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>org.up.cd.CellApp</mainClass>
+                            <mainClass>org.up.cd.ServerCellApp</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -73,7 +73,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>org.up.cd.CellApp</mainClass>
+                            <mainClass>org.up.cd.ServerCellApp</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
