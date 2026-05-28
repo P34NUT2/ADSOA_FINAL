@@ -23,10 +23,11 @@ public class NodoApp {
     private static final Logger logger = LogManager.getLogger(NodoApp.class);
 
     // Node Configuration
-    public static String nodeId;
-    public static int listenerPort;
+    public static String nodeId = "UNKNOWN_NODE";
+    public static int listenerPort = 0;
     private static JsonNode peers;
     private static String configFilePath = null;
+    private static final int DEFAULT_LISTENING_PORT = 9999; // Default port for listening-only mode
 
     public static void main(String[] args) {
         logger.info("Starting Node App...");
@@ -34,19 +35,26 @@ public class NodoApp {
         // Check if an external config file was supplied via command-line arguments
         if (args.length > 0) {
             configFilePath = args[0];
+            logger.info("Config file path provided via arguments: {}", configFilePath);
+        } else {
+            logger.info("No config file argument provided. Will search for conections.json");
         }
 
         // Load configuration
-        if (!loadConfiguration()) {
-            logger.fatal("Critical error: Node cannot start without configuration.");
-            logger.info("Starting in listening mode as backup...");
+        boolean configLoaded = loadConfiguration();
+
+        if (!configLoaded) {
+            // No configuration found - run in listening-only mode on default port
+            logger.warn("Starting in LISTENING-ONLY mode on default port {}", DEFAULT_LISTENING_PORT);
+            listenerPort = DEFAULT_LISTENING_PORT;
+            nodeId = "LISTENING_NODE_" + DEFAULT_LISTENING_PORT;
         } else {
             logger.info("Configuration loaded successfully.");
-            // Hilo de monitoreo para asegurar que todos los nodos pares estén conectados
+            // Start peer monitor thread only if we have a valid configuration
             new Thread(NodoApp::monitorPeerConnections, "PeerMonitor").start();
         }
 
-        // Hilo de escucha para permitir que otros se conecten a nosotros
+        // Always start the listener thread (with configured or default port)
         new Thread(NodoApp::connectionListener, "ServerListener").start();
 
         // Shutdown hook to release socket descriptors
@@ -177,43 +185,59 @@ public class NodoApp {
      * Loads configuration (supporting custom path, current directory, or internal fallback)
      */
     private static boolean loadConfiguration() {
+        InputStream is = null;
+        String loadedFrom = "UNKNOWN";
+
         try {
             ObjectMapper mapper = new ObjectMapper();
-            InputStream is = null;
 
             // 1. Try to load from custom path if provided in arguments
             if (configFilePath != null) {
                 File file = new File(configFilePath);
+                String absolutePath = file.getAbsolutePath();
+                logger.info("Attempting to load config from: {}", absolutePath);
+
                 if (file.exists()) {
                     is = new FileInputStream(file);
-                    logger.info("Loading configuration from custom command-line path: {}", configFilePath);
+                    loadedFrom = "EXTERNAL_ARG: " + absolutePath;
+                    logger.info("SUCCESS: Configuration file found at {}", absolutePath);
                 } else {
-                    logger.error("Config file not found at specified path: {}", configFilePath);
+                    logger.warn("FAILED: Config file not found at specified path: {}", absolutePath);
+                    logger.info("File exists check returned: false");
                 }
             }
 
             // 2. Try to load from current working directory
             if (is == null) {
                 File file = new File("conections.json");
+                String absolutePath = file.getAbsolutePath();
+                logger.info("Attempting to load from current directory: {}", absolutePath);
+
                 if (file.exists()) {
                     is = new FileInputStream(file);
-                    logger.info("Loading configuration from current working directory: conections.json");
+                    loadedFrom = "CURRENT_DIR: " + absolutePath;
+                    logger.info("SUCCESS: Configuration file found in current directory");
+                } else {
+                    logger.info("Not found in current directory: {}", absolutePath);
                 }
             }
 
-            // 3. Fallback to classpath resource
+            // 3. If no external config found, return false (do NOT fallback to classpath)
             if (is == null) {
-                is = NodoApp.class.getClassLoader().getResourceAsStream("conections.json");
-                if (is != null) {
-                    logger.info("Loading default internal configuration from resources classpath.");
+                logger.warn("========================================");
+                logger.warn("CONFIGURATION NOT FOUND - Starting in LISTENING MODE ONLY");
+                logger.warn("No external configuration file found. Checked locations:");
+                if (configFilePath != null) {
+                    logger.warn("  1. Command-line argument: {}", new File(configFilePath).getAbsolutePath());
                 }
-            }
-
-            if (is == null) {
-                logger.error("Configuration file 'conections.json' not found externally or internally.");
+                logger.warn("  2. Current directory: {}", new File("conections.json").getAbsolutePath());
+                logger.warn("Node will start in passive listening mode without peer connections.");
+                logger.warn("To run with full configuration, provide a conections.json file.");
+                logger.warn("========================================");
                 return false;
             }
 
+            // Parse the JSON configuration
             JsonNode config = mapper.readTree(is);
             nodeId = config.get("nodeId").asText();
             listenerPort = config.get("listener_port").asInt();
@@ -228,11 +252,27 @@ public class NodoApp {
                 }
             }
 
-            logger.info("Initial configuration loaded for Node ID: {}", nodeId);
+            logger.info("========================================");
+            logger.info("Configuration loaded from: {}", loadedFrom);
+            logger.info("Node ID: {}", nodeId);
+            logger.info("Listening Port: {}", listenerPort);
+            logger.info("Configured Peers: {}", peers != null ? peers.size() : 0);
+            logger.info("========================================");
+
             return true;
+
         } catch (Exception e) {
-            logger.error("Error loading or parsing connections config: {}", e.getMessage());
+            logger.error("Error loading or parsing connections config: {}", e.getMessage(), e);
             return false;
+        } finally {
+            // Always close the input stream
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    logger.warn("Error closing config input stream: {}", e.getMessage());
+                }
+            }
         }
     }
 }
