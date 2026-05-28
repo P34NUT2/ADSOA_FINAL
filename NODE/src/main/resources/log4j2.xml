@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="info" name="NODO1" >
+<Configuration status="info" name="NODE" >
     <Appenders>
-        <RollingFile name="RollingFile" fileName="logs/Nodo_A.log"
-                     filePattern="logs/$${date:yyyy-MM}/Nodo_A-%d{MM-dd-yyyy}-%i.log.gz">
+        <RollingFile name="RollingFile" fileName="logs/node.log"
+                     filePattern="logs/$${date:yyyy-MM}/node-%d{MM-dd-yyyy}-%i.log.gz">
             <PatternLayout>
                 <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
             </PatternLayout>
