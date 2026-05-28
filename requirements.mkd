@@ -1,0 +1,126 @@
+# CONCEPTOS NECESARIOS
+
+## HUELLA
+
+La huella representa la identidad única de cada elemento que constituye el entorno. Cada uno de estos elementos debe poseer una huella distinta. Esta característica distintiva desempeña un papel crucial en la identificación de los agentes responsables de generar los acuses.
+
+En esencia, la huella actúa como un distintivo exclusivo que permite diferenciar y reconocer de manera inequívoca cada componente del entorno. Esta distinción es esencial para el proceso de generación de acuses, ya que garantiza la atribución precisa de la acción a un ente específico. La singularidad de cada huella contribuye a establecer la integridad y autenticidad en la identificación de los elementos que participan en el protocolo.
+
+---
+
+## EVENTO
+
+El evento actúa como el identificador clave de una solicitud de servicio dentro del protocolo. Su función principal radica en la identificación de los acuses generados en respuesta a estas solicitudes; además, puede ser empleado para distinguir las respuestas asociadas.
+
+En términos sencillos, el evento sirve como una etiqueta única que vincula las solicitudes de servicio con sus correspondientes acuses y respuestas. Esta herramienta facilita una gestión eficiente al proporcionar una manera clara de rastrear y asociar cada evento con su ciclo correspondiente de solicitud y respuesta. La utilidad del evento radica en su capacidad para agilizar el proceso de identificación y seguimiento de las transacciones dentro del protocolo, contribuyendo así a una ejecución más clara y efectiva del sistema.
+
+# CONCEPTOS NECESARIOS
+
+## SINGLETON
+
+Un Singleton en Java es un patrón de diseño que se utiliza para garantizar que una clase tenga una única instancia y proporciona un punto global de acceso a esa instancia desde cualquier parte del programa. Su objetivo principal es restringir la instanciación de una clase a un único objeto y proporcionar un punto de acceso global a esa instancia.
+
+Características clave de un Singleton en Java:
+- Constructor Privado: La clase Singleton tiene un constructor privado para evitar que otras clases instancien objetos directamente.
+- Instancia Única: La clase contiene una variable estática que guarda la única instancia de la clase.
+- Método Estático de Acceso: Se proporciona un método estático que actúa como punto de acceso para obtener la instancia única. Si la instancia aún no existe, se crea; de lo contrario, se devuelve la instancia existente.
+
+EJEMPLO PATRÓN SINGLETON
+
+/**
+ * Ejemplo de patrón Singleton.
+ */
+public class MiSingleton {
+
+    /**
+     * Constructor privado para prevenir instanciación externa.
+     */
+    private MiSingleton() {
+        // Inicializaciones necesarias.
+    }
+
+    /**
+     * Clase estática interna que contiene la instancia única.
+     * - No se crea hasta que alguien llame getInstancia().
+     * - Java garantiza que esta inicialización es thread-safe.
+     */
+    private static class Holder {
+        private static final MiSingleton INSTANCIA = new MiSingleton();
+    }
+
+    /**
+     * Devuelve la instancia única del Singleton.
+     * - La primera invocación dispara la carga de la clase Holder.
+     * - Muy eficiente ya que no usa sincronización en cada llamada.
+     */
+    public static MiSingleton getInstancia() {
+        return Holder.INSTANCIA;
+    }
+
+    /**
+     * Método de ejemplo.
+     */
+    public void ejecutarAccion() {
+        System.out.println("Acción ejecutada desde el Singleton (Bill Pugh).");
+    }
+}
+
+## Proyecto Final 
+
+- Protocolo de foliado.
+- Carga dinámica de servicios.
+
+# REQUERIMIENTOS DEL PROYECTO FINAL
+
+## EN EQUIPO  
+MARTES, 26 DE MAYO  
+
+**Folgado y Gestión de Mensajes**  
+1. Colas de salida por tipo de contenido: Los mensajes de solicitud deberán organizarse en colas de salida independientes según su código de contenido (por ejemplo: una cola para operaciones de suma, otra para resta, etc.).  
+2. Hilo de envío: Se deberá implementar un hilo encargado de extraer los mensajes de las colas de salida y enviarlos a través del nodo de comunicación correspondiente.  
+3. Hilo receptor: El hilo receptor tendrá la responsabilidad de interpretar los mensajes entrantes.  
+   - Cuando reciba una solicitud de servicio, deberá:  
+     - a) Enviar un acuse de recibo (ACK).  
+     - b) Almacenar el mensaje en la cola de atención para su posterior procesamiento.  
+4. Hilo de despacho: Se deberá implementar un hilo de despacho que gestione y procese los mensajes almacenados en la cola de atención.  
+5. Control de acuses de recibo (opcional, +10 puntos): Se debe establecer un número mínimo configurable de acuses de recibo requeridos antes de permitir el envío del siguiente mensaje en la cola de salida.  
+6. Carga dinámica de servicios (opcional, +20 puntos): Las entidades deberán ser capaces de cargar dinámicamente archivos JAR que contengan los servicios configurables a ejecutar.  
+7. Protocolos de comunicación: Se deberán utilizar los protocolos definidos en la presentación.
+
+## ESTRATEGIAS PARA EL DESARROLLO DEL PROYECTO
+
+# CARGA DINÁMICA
+
+La carga dinámica de JARs es un mecanismo que permite a una aplicación Java cargar y descargar módulos o bibliotecas en tiempo de ejecución. Esto proporciona flexibilidad y escalabilidad a las aplicaciones distribuidas, ya que los nuevos componentes pueden ser incorporados o actualizados sin detener el sistema.
+
+## Ventajas de la Carga Dinámica de JARs en arquitecturas distribuidas:
+1. **Flexibilidad y Adaptabilidad**: Permite la introducción de nuevas funcionalidades o actualizaciones en tiempo de ejecución, lo que facilita la adaptación a cambios en los requisitos o en el entorno de ejecución.
+2. **Menor Tiempo de Inactividad**: Al cargar JARs dinámicamente, se minimiza la necesidad de detener la aplicación para realizar actualizaciones. Esto reduce el tiempo de inactividad y mejora la disponibilidad del sistema.
+3. **Escalabilidad**: Facilita la escalabilidad al permitir la adición de nuevos módulos o la expansión de capacidades sin afectar la totalidad de la aplicación.
+
+- Implementar los hilos y singleton sugeridos (+10)
+- Implementar la carga dinámica (+10)
+
+POR PUNTOS EXTRA EN EL PROYECTO PARA LA SIGUIENTE CLASE
+
+## PROTOCOLO DE FOLIADO
+
+# Protocolo de foliado
+
+## Componentes del flujo
+
+- **Enviador**
+  - Envía → **MSJ** (mensaje)
+  - El mensaje llega al **Receptor**
+
+- **Receptor**
+  - Recibe el **MSJ**
+  - Lo coloca en la **Fila de entrada**
+  - Envía un **ACK** (acuse de recibo) de vuelta al **Enviador**
+
+- **Fila de entrada**
+  - Almacena mensajes pendientes
+
+- **Ejecutor de servicios**
+  - Toma mensajes desde la **Fila de entrada**
+  - Procesa los servicios solicitados
