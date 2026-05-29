@@ -1,0 +1,10 @@
+{
+    "cellId": "ServerCell_Mult_2",
+    "targetNodeHost": "127.0.0.1",
+    "targetNodePort": 5001,
+    "minAcks": 2,
+    "servicesDir": "./services",
+    "services": [
+        {"serviceId": 3, "class": "org.up.cd.services.MultiplicacionService", "jar": "MultiplicacionService.jar"}
+    ]
+}

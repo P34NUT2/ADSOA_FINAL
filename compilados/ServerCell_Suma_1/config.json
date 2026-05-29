@@ -1,0 +1,10 @@
+{
+    "cellId": "ServerCell_Suma_1",
+    "targetNodeHost": "127.0.0.1",
+    "targetNodePort": 5000,
+    "minAcks": 2,
+    "servicesDir": "./services",
+    "services": [
+        {"serviceId": 1, "class": "org.up.cd.services.SumaService", "jar": "SumaService.jar"}
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "nodeId": "Nodo_D",
+    "listener_port": 5003,
+    "peers": [
+        {
+            "id": "Nodo_A",
+            "host": "127.0.0.1",
+            "port": 5000
+        },
+        {
+            "id": "Nodo_B",
+            "host": "127.0.0.1",
+            "port": 5001
+        },
+        {
+            "id": "Nodo_C",
+            "host": "127.0.0.1",
+            "port": 5002
+        }
+    ]
+}

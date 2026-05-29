@@ -1,6 +1,7 @@
 # Claude Code
 .claude/
 CLAUDE.md
+CLAUDE.original.md
 
 # Maven
 target/
@@ -70,3 +71,10 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.rar
+
+# Allow precompiled JARs in compilados (no mvn available)
+!compilados/**/*.jar
+
+importante.md
+instrucciones.md
+*png

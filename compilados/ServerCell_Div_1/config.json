@@ -1,0 +1,10 @@
+{
+    "cellId": "ServerCell_Div_1",
+    "targetNodeHost": "127.0.0.1",
+    "targetNodePort": 5002,
+    "minAcks": 2,
+    "servicesDir": "./services",
+    "services": [
+        {"serviceId": 4, "class": "org.up.cd.services.DivisionService", "jar": "DivisionService.jar"}
+    ]
+}
