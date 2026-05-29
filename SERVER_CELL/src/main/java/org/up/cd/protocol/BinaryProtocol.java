@@ -58,8 +58,12 @@ public class BinaryProtocol {
 
     public static BinaryProtocol deserialize(byte[] raw) throws IOException {
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(raw));
-        BinaryProtocol msg = new BinaryProtocol();
+        return read(dis);
+    }
 
+    /** Read exactly one message from a live stream. Uses readFully — no buffer coalescing. */
+    public static BinaryProtocol read(DataInputStream dis) throws IOException {
+        BinaryProtocol msg = new BinaryProtocol();
         msg.originBusiness  = readFixed(dis);
         msg.originSubsystem = readFixed(dis);
         msg.originEntity    = readFixed(dis);
@@ -68,7 +72,6 @@ public class BinaryProtocol {
         msg.destEntity      = readFixed(dis);
         msg.eventId         = dis.readLong();
         msg.serviceNumber   = dis.readInt();
-
         int len = dis.readInt();
         if (len > 0) {
             msg.data = new byte[len];
@@ -76,7 +79,6 @@ public class BinaryProtocol {
         } else {
             msg.data = new byte[0];
         }
-
         return msg;
     }
 

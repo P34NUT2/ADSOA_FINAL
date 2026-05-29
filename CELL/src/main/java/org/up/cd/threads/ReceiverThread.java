@@ -7,6 +7,7 @@ import org.up.cd.network.MeshConnection;
 import org.up.cd.protocol.BinaryProtocol;
 import org.up.cd.queues.InputQueueManager;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -41,43 +42,35 @@ public class ReceiverThread implements Runnable {
             InputStream is = MeshConnection.getInstance().getInputStream();
             if (is == null) { continue; }
 
+            // Wrap once per connection — readFully guarantees exactly one message per call,
+            // preventing TCP coalescing from merging two messages into one read.
+            DataInputStream dis = new DataInputStream(is);
             try {
-                byte[] buffer = new byte[BUFFER_SIZE];
-                int bytesRead = is.read(buffer);
-                if (bytesRead == -1) {
-                    logger.warn("[ReceiverThread] Connection closed by node");
-                    MeshConnection.getInstance().markDisconnected();
-                    continue;
-                }
+                while (running && MeshConnection.getInstance().isConnected()) {
+                    BinaryProtocol msg = BinaryProtocol.read(dis);
+                    int svc = msg.getServiceNumber();
 
-                BinaryProtocol msg = BinaryProtocol.deserialize(buffer);
-                int svc = msg.getServiceNumber();
+                    if (svc == BinaryProtocol.SERVICE_ACK) {
+                        senderThread.receiveAck(msg.getEventId(), msg.getOriginEntity());
 
-                if (svc == BinaryProtocol.SERVICE_ACK) {
-                    // ACK from a server cell
-                    senderThread.receiveAck(msg.getEventId(), msg.getOriginEntity());
+                    } else if (svc < 0) {
+                        String myId = Config.getInstance().getCellId();
+                        String dest = msg.getDestEntity().trim();
+                        if (!myId.equals(dest)) {
+                            logger.debug("[ReceiverThread] Response destEntity={} not mine={} — ignored", dest, myId);
+                            continue;
+                        }
+                        logger.info("[ReceiverThread] Response eventId={} serviceId={} from={}",
+                                msg.getEventId(), svc, msg.getOriginEntity());
+                        InputQueueManager.getInstance().enqueue(msg);
 
-                } else if (svc < 0) {
-                    // Response from server cell — only accept if addressed to this cell (huella filter)
-                    String myId = Config.getInstance().getCellId();
-                    String dest = msg.getDestEntity().trim();
-                    if (!myId.equals(dest)) {
-                        logger.debug("[ReceiverThread] Response destEntity={} not mine={} — ignored", dest, myId);
-                        continue;
+                    } else {
+                        logger.debug("[ReceiverThread] Ignored serviceId={}", svc);
                     }
-                    logger.info("[ReceiverThread] Response eventId={} serviceId={} from={}",
-                            msg.getEventId(), svc, msg.getOriginEntity());
-                    InputQueueManager.getInstance().enqueue(msg);
-
-                } else {
-                    logger.debug("[ReceiverThread] Ignored serviceId={} (client cell, not a server)", svc);
                 }
-
             } catch (IOException e) {
-                logger.error("[ReceiverThread] Read error: {}", e.getMessage());
+                logger.warn("[ReceiverThread] Connection lost: {}", e.getMessage());
                 MeshConnection.getInstance().markDisconnected();
-            } catch (Exception e) {
-                logger.debug("[ReceiverThread] Deserialize error: {}", e.getMessage());
             }
         }
         logger.info("[ReceiverThread] Stopped");
