@@ -2,6 +2,7 @@ package org.up.cd.threads;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.up.cd.config.Config;
 import org.up.cd.network.MeshConnection;
 import org.up.cd.protocol.BinaryProtocol;
 import org.up.cd.queues.InputQueueManager;
@@ -57,7 +58,13 @@ public class ReceiverThread implements Runnable {
                     senderThread.receiveAck(msg.getEventId(), msg.getOriginEntity());
 
                 } else if (svc < 0) {
-                    // Response from server cell
+                    // Response from server cell — only accept if addressed to this cell (huella filter)
+                    String myId = Config.getInstance().getCellId();
+                    String dest = msg.getDestEntity().trim();
+                    if (!myId.equals(dest)) {
+                        logger.debug("[ReceiverThread] Response destEntity={} not mine={} — ignored", dest, myId);
+                        continue;
+                    }
                     logger.info("[ReceiverThread] Response eventId={} serviceId={} from={}",
                             msg.getEventId(), svc, msg.getOriginEntity());
                     InputQueueManager.getInstance().enqueue(msg);
