@@ -1,6 +1,0 @@
-{
-    "cellId": "ClientCell_1",
-    "targetNodeHost": "127.0.0.1",
-    "targetNodePort": 5000,
-    "minAcks": 2
-}

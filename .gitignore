@@ -72,8 +72,8 @@ Thumbs.db
 *.tar.gz
 *.rar
 
-# Allow precompiled JARs in compilados (no mvn available)
-!compilados/**/*.jar
+# Compiled deployment folder (too large for repo)
+compilados/
 
 importante.md
 instrucciones.md
