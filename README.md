@@ -1,272 +1,171 @@
 # ADSOA_FINAL
 
-Proyecto final de la materia de Cómputo Distribuido.
+Proyecto final de Cómputo Distribuido — Arquitectura de Servicios Distribuidos Orientada a Agentes (ADSOA).
 
 ## Descripción
 
-Sistema distribuido de comunicación peer-to-peer implementado en Java con Maven. El proyecto consiste en una red de nodos que se comunican entre sí utilizando sockets TCP, implementando un protocolo de handshake y una regla de reenvío de mensajes ("Regla de Oro").
+Sistema distribuido peer-to-peer implementado en Java 21. Consiste en una red de nodos que forman una malla de comunicación, celdas cliente que solicitan servicios, y celdas servidor que proveen microservicios cargados dinámicamente.
 
-### Arquitectura
+## Módulos
 
-El proyecto está organizado en tres módulos principales:
+| Módulo | Rol |
+|--------|-----|
+| **NODE** | Nodo de la malla. Reenvía mensajes (bytes opacos). No interpreta protocolo. |
+| **CELL** | Celda cliente. Menú interactivo, envía peticiones, espera respuestas. |
+| **SERVER_CELL** | Celda servidora. Carga microservicios dinámicamente (.jar) y los ejecuta. |
+| **SERVICES** | Microservicios aritméticos (Suma, Resta, Multiplicacion, Division). |
 
-- **NODE**: Nodos de la red que forman la malla de comunicación y reenvían mensajes
-- **CELL**: Aplicaciones cliente que se conectan a los nodos
-- **SERVER_CELL**: Aplicaciones servidor (en desarrollo)
+Ver [mini_documentation.md](mini_documentation.md) para descripción detallada de la arquitectura.
 
 ## Requisitos
 
-- Java 21 o superior
-- Maven 3.6+
+- Java 21
+- Maven 3.6+ (para compilar NODE y SERVICES)
 
-## Estructura del Proyecto
+## Estructura
 
 ```
 PROYECTO/
-├── NODE/               # Módulo principal del nodo
-│   ├── src/
-│   │   └── main/
-│   │       ├── java/
-│   │       │   └── org/up/cd/
-│   │       │       ├── NodoApp.java
-│   │       │       └── network/
-│   │       │           ├── Connections.java
-│   │       │           └── SocketHandler.java
-│   │       └── resources/
-│   │           ├── conections.json
-│   │           └── log4j2.xml
-│   └── pom.xml
-├── CELL/               # Módulo de células (cliente)
-└── SERVER_CELL/        # Módulo de células servidor
+├── NODE/               # Nodo de malla
+├── CELL/               # Celda cliente
+├── SERVER_CELL/        # Celda servidora con carga dinámica
+├── SERVICES/           # Microservicios (uno por operación)
+│   ├── SumaService/
+│   ├── RestaService/
+│   ├── MultiplicacionService/
+│   └── DivisionService/
+└── compilados_ejemplo/ # Ejemplo de nodos preconfigurados
 ```
 
 ## Compilación
 
-### Compilar el proyecto NODE:
+### NODE
 
 ```bash
 cd NODE
 mvn clean package
+cp target/NODE-1.0.0-jar-with-dependencies.jar compilados_ejemplo/Node1/NODE.jar
+# repetir para Node2, Node3, Node4
 ```
 
-El JAR compilado se genera en:
-- `NODE/target/NODE-1.0.0.jar` (requiere dependencias en lib/)
-- `NODE/target/NODE-1.0.0-jar-with-dependencies.jar` (JAR completo - recomendado)
+### CELL y SERVER_CELL
 
-### Preparar carpeta de ejecución:
+Se compilan con `javac` directamente (sin Maven CLI). Ver [mini_documentation.md](mini_documentation.md) sección de compilación.
 
-Después de compilar, debes copiar el JAR a cada carpeta de nodo:
+### SERVICES
 
 ```bash
-# Desde la raíz del proyecto
-cp NODE/target/NODE-1.0.0-jar-with-dependencies.jar compilados_ejemplo/Node1/NODE.jar
-cp NODE/target/NODE-1.0.0-jar-with-dependencies.jar compilados_ejemplo/Node2/NODE.jar
-cp NODE/target/NODE-1.0.0-jar-with-dependencies.jar compilados_ejemplo/Node3/NODE.jar
-cp NODE/target/NODE-1.0.0-jar-with-dependencies.jar compilados_ejemplo/Node4/NODE.jar
+cd SERVICES/SumaService
+mvn clean package
+# genera SumaService-1.0.0-jar-with-dependencies.jar
 ```
-
-Cada carpeta de nodo ya incluye su archivo `conections.json` preconfigurado.
 
 ## Configuración
 
-Cada nodo requiere un archivo `conections.json` con la siguiente estructura:
+### NODE — `conections.json`
 
 ```json
 {
-    "nodeId": "Nodo_B",
-    "listener_port": 5001,
+    "nodeId": "Nodo_A",
+    "listener_port": 5000,
     "peers": [
+        {"id": "Nodo_B", "host": "127.0.0.1", "port": 5001}
+    ]
+}
+```
+
+### CELL — `config.json`
+
+```json
+{
+    "cellId": "ClientCell1",
+    "targetNodeHost": "127.0.0.1",
+    "targetNodePort": 5000,
+    "minAcks": 2
+}
+```
+
+### SERVER_CELL — `config.json`
+
+```json
+{
+    "cellId": "ServerCell_Suma_1",
+    "targetNodeHost": "127.0.0.1",
+    "targetNodePort": 5000,
+    "minAcks": 2,
+    "servicesDir": "./services",
+    "services": [
         {
-            "id": "Nodo_A",
-            "host": "127.0.0.1",
-            "port": 5000
-        },
-        {
-            "id": "Nodo_C",
-            "host": "127.0.0.1",
-            "port": 5002
-        },
-        {
-            "id": "Nodo_D",
-            "host": "127.0.0.1",
-            "port": 5003
+            "serviceId": 1,
+            "class": "org.up.cd.services.SumaService",
+            "jar": "SumaService.jar"
         }
     ]
 }
 ```
 
-### Parámetros de configuración:
-
-- **nodeId**: Identificador único del nodo
-- **listener_port**: Puerto en el que el nodo escuchará conexiones entrantes
-- **peers**: Lista de nodos pares a los que se conectará automáticamente
-  - **id**: Identificador del nodo par
-  - **host**: Dirección IP o hostname del nodo par
-  - **port**: Puerto del nodo par
-
 ## Ejecución
 
-### Ejecución en Linux/macOS
-
-Usar los scripts proporcionados:
-
 ```bash
-cd compilados_ejemplo
+# 1. Iniciar nodos
+cd compilados/Node1 && java -jar NODE.jar &
+cd compilados/Node2 && java -jar NODE.jar &
+cd compilados/Node3 && java -jar NODE.jar &
+cd compilados/Node4 && java -jar NODE.jar &
 
-# Iniciar todos los nodos
-./run_all_nodes.sh
+# 2. Iniciar server cells (una por operación, mínimo 2 por operación para foliado)
+cd compilados/ServerCell_Suma_1 && java -jar SERVER_CELL.jar &
+cd compilados/ServerCell_Suma_2 && java -jar SERVER_CELL.jar &
+# ... repetir para Resta, Mult, Div
 
-# Detener todos los nodos
-./stop_all_nodes.sh
-
-# Limpiar logs
-./clean_logs.sh
+# 3. Iniciar celda cliente (interactiva)
+cd compilados/ClientCell1 && java -jar CELL.jar
 ```
 
-### Ejecución en Windows
-
-Los scripts `.sh` NO funcionan en Windows. Debes ejecutar cada nodo manualmente:
-
-**Opción 1: Usar múltiples ventanas de CMD o PowerShell**
-
-Abrir 4 ventanas y ejecutar en cada una:
-
-```cmd
-REM Ventana 1
-cd compilados_ejemplo\Node1
-java -jar NODE.jar
-
-REM Ventana 2
-cd compilados_ejemplo\Node2
-java -jar NODE.jar
-
-REM Ventana 3
-cd compilados_ejemplo\Node3
-java -jar NODE.jar
-
-REM Ventana 4
-cd compilados_ejemplo\Node4
-java -jar NODE.jar
-```
-
-**Opción 2: Usar WSL (Windows Subsystem for Linux)**
-
-Si tienes WSL instalado, puedes usar los scripts .sh normalmente.
-
-Para detener: Presionar `Ctrl+C` en cada ventana.
-
-### Ejecución manual (cualquier sistema operativo)
-
-#### Opción 1: Desde el directorio con conections.json
-
-El nodo buscará el archivo `conections.json` en el directorio actual:
-
-```bash
-cd /ruta/carpeta/con/config
-java -jar NODE.jar
-```
-
-#### Opción 2: Especificando la ruta del archivo de configuración
-
-```bash
-java -jar NODE.jar /ruta/al/conections.json
-```
-
-#### Opción 3: Modo escucha sin configuración
-
-Si no se encuentra archivo de configuración, el nodo iniciará en modo escucha en el puerto 9999:
-
-```bash
-java -jar NODE.jar
-```
-
-Salida esperada:
-```
-CONFIGURATION NOT FOUND - Starting in LISTENING MODE ONLY
-Starting in LISTENING-ONLY mode on default port 9999
-```
-
-## Carpeta de Compilados de Ejemplo
-
-La carpeta `compilados_ejemplo/` contiene la estructura lista para usar con los nodos:
-
-```
-compilados_ejemplo/
-├── Node1/
-│   ├── conections.json    # Configuración para Nodo_A (puerto 5000)
-│   ├── logs/              # Se crea automáticamente al ejecutar
-│   └── NODE.jar           # DEBES COPIAR AQUÍ después de compilar
-├── Node2/
-│   ├── conections.json    # Configuración para Nodo_B (puerto 5001)
-│   ├── logs/
-│   └── NODE.jar           # DEBES COPIAR AQUÍ después de compilar
-├── Node3/
-│   ├── conections.json    # Configuración para Nodo_C (puerto 5002)
-│   ├── logs/
-│   └── NODE.jar           # DEBES COPIAR AQUÍ después de compilar
-├── Node4/
-│   ├── conections.json    # Configuración para Nodo_D (puerto 5003)
-│   ├── logs/
-│   └── NODE.jar           # DEBES COPIAR AQUÍ después de compilar
-├── run_all_nodes.sh       # Script para iniciar todos los nodos (Linux/macOS)
-├── stop_all_nodes.sh      # Script para detener todos los nodos (Linux/macOS)
-├── clean_logs.sh          # Script para limpiar archivos de log (Linux/macOS)
-└── README.txt             # Instrucciones detalladas
-```
-
-**IMPORTANTE:** Los archivos `NODE.jar` NO están incluidos en el repositorio. Debes compilar el proyecto y copiarlos manualmente siguiendo las instrucciones de compilación.
-
-### Por qué los scripts .sh solo funcionan en Linux/macOS
-
-Los archivos `.sh` (shell scripts) son scripts de Bash que solo pueden ejecutarse en sistemas Unix-like:
-- Linux
-- macOS
-- Windows con WSL (Windows Subsystem for Linux)
-
-Windows nativo (CMD o PowerShell) NO puede ejecutar archivos `.sh` directamente porque usa un intérprete de comandos diferente. En Windows debes ejecutar cada nodo manualmente o crear archivos `.bat` equivalentes.
-
-## Archivos de Log
-
-Los logs se generan en la carpeta `logs/` dentro del directorio de ejecución:
-- Archivo principal: `logs/node.log`
-- Rotación automática cuando el archivo alcanza 250 MB
-- Archivos históricos comprimidos en: `logs/YYYY-MM/node-MM-dd-yyyy-N.log.gz`
-
-## Protocolo de Comunicación
+## Protocolo
 
 ### Handshake
 
-Cuando un nodo o célula se conecta, debe enviar un mensaje de identificación:
 ```
-HELLO:NODE:<id>    # Para nodos
-HELLO:CELL:<id>    # Para células
+HELLO:NODE:<id>    # nodo a nodo
+HELLO:CELL:<id>    # celda a nodo (tanto CELL como SERVER_CELL)
 ```
 
-### Regla de Oro (Reenvío de Mensajes)
+### Regla de Oro
 
-- **Mensajes de NODO**: Se reenvían únicamente a células conectadas localmente
-- **Mensajes de CÉLULA**: Se reenvían a todos los nodos y todas las células (inundación total)
+- Mensaje de **NODO** → reenvía solo a celdas locales
+- Mensaje de **CELDA** → inundación total (todos los nodos y celdas)
 
-## Características Técnicas
+### Protocolo Binario
 
-- **Thread-safe**: Uso de `ConcurrentHashMap` para gestión de conexiones
-- **Reconexión automática**: Monitor que verifica conexiones cada 5 segundos
-- **Manejo de bytes**: Los nodos reenvían datos sin interpretar el protocolo
-- **Shutdown hooks**: Liberación correcta de recursos al terminar
-- **Logs estructurados**: Log4j2 con rotación automática
+Formato de cada mensaje:
+
+| Campo | Tamaño |
+|-------|--------|
+| originBusiness | 16 bytes |
+| originSubsystem | 16 bytes |
+| originEntity (huella) | 16 bytes |
+| destBusiness | 16 bytes |
+| destSubsystem | 16 bytes |
+| destEntity | 16 bytes |
+| eventId | 8 bytes (long) |
+| serviceNumber | 4 bytes (int) |
+| dataLength | 4 bytes (int) |
+| data | N bytes |
+
+### Números de servicio
+
+| Valor | Significado |
+|-------|-------------|
+| `+N` | Petición (cliente → servidor), N = 1/2/3/4 |
+| `0` | ACK de confirmación (foliado) |
+| `-N` | Respuesta (servidor → cliente) |
 
 ## Dependencias
 
-- Jackson 2.17.0 (Procesamiento JSON)
-- Log4j2 2.23.1 (Sistema de logging)
+- Log4j2 2.23.1
+- Jackson 2.17.0
 
 ## Autor
 
 Antonio V - 0264679@up.edu.mx
-
-## Notas
-
-- El proyecto utiliza Java 21 con soporte para características modernas
-- Los nodos mantienen conexiones persistentes con sus pares configurados
-- Las células son consideradas clientes transitorios
-- El sistema está diseñado para manejar redes malladas de nodos
