@@ -12,25 +12,25 @@
 
 > "En los sistemas distribuidos tradicionales existe un problema fundamental: si el servidor central cae, todo el sistema cae con él. El punto único de falla es el talón de Aquiles de cualquier arquitectura centralizada."
 
-> "En este proyecto implementamos ADSOA — una arquitectura donde no existe ningún nodo maestro. Cada componente es un agente autónomo que se comunica por mensajes sobre una malla TCP. Si un nodo cae, la malla sigue funcionando."
+> "En este proyecto implementamos ADSOA — una arquitectura donde no existe ningún nodo maestro. Cada componente es un agente autónomo que se comunica por mensajes sobre un campo de datos TCP. Si un nodo cae, el campo de datos sigue funcionando."
 
 ---
 
 ## ARQUITECTURA GENERAL (0:30 – 1:30)
 
-[PANTALLA: Diagrama de la malla — 4 nodos conectados, con celdas colgando de cada nodo]
+[PANTALLA: Diagrama del campo de datos — 4 nodos conectados, con células colgando de cada nodo]
 
 > "El sistema tiene cuatro tipos de componentes:"
 
-> "Primero, los **NODEs** — los nodos de la malla. Son retransmisores de bytes puros. No entienden el contenido de los mensajes, solo saben si quien les habla es otro nodo o una celda, gracias a un handshake inicial."
+> "Primero, los **NODEs** — los nodos del campo de datos. Son retransmisores de bytes puros. No entienden el contenido de los mensajes, solo saben si quien les habla es otro nodo o una célula, gracias a un handshake inicial."
 
 [PANTALLA: Highlight del NODE en el diagrama]
 
-> "Segundo, las **CELLs** — las celdas cliente. Son el punto de entrada del usuario. Tienen un menú interactivo para elegir operaciones y se encargan de enviarlas a la red."
+> "Segundo, las **CELLs** — las células cliente. Son el punto de entrada del usuario. Tienen un menú interactivo para elegir operaciones y se encargan de enviarlas a la red."
 
 [PANTALLA: Highlight de ClientCell en el diagrama]
 
-> "Tercero, las **SERVER_CELLs** — las celdas servidoras. Escuchan peticiones, las filtran por tipo de servicio, ejecutan el microservicio correspondiente y responden."
+> "Tercero, las **SERVER_CELLs** — las células servidoras. Escuchan peticiones, las filtran por tipo de servicio, ejecutan el microservicio correspondiente y responden."
 
 [PANTALLA: Highlight de ServerCells en el diagrama]
 
@@ -40,15 +40,15 @@
 
 ## LA REGLA DE ORO DEL NODO (1:30 – 2:00)
 
-[PANTALLA: Animación del flujo de mensajes en la malla]
+[PANTALLA: Animación del flujo de mensajes en el campo de datos]
 
 > "El comportamiento de reenvío del nodo sigue una regla simple pero poderosa:"
 
-> "Si el mensaje viene de **otro nodo**, lo reenvía únicamente a las celdas conectadas localmente."
+> "Si el mensaje viene de **otro nodo**, lo reenvía únicamente a las células conectadas localmente."
 
-> "Si el mensaje viene de **una celda**, hace inundación total — lo manda a todos los nodos y todas las celdas de la malla."
+> "Si el mensaje viene de **una célula**, hace inundación total — lo manda a todos los nodos y todas las células del campo de datos."
 
-> "Esto garantiza que cualquier celda servidora competente para atender una petición la va a recibir, sin que el cliente tenga que saber de antemano dónde están los servidores."
+> "Esto garantiza que cualquier célula servidora competente para atender una petición la va a recibir, sin que el cliente tenga que saber de antemano dónde están los servidores."
 
 ---
 
@@ -60,7 +60,7 @@
 
 > "El número de servicio tiene tres estados posibles: positivo para una petición, cero para un acuse de recibo, y negativo para una respuesta. Simple y sin ambigüedades."
 
-> "Dos conceptos clave del protocolo son la **huella** y el **evento**. La huella es el ID único de cada celda — permite deduplicar acuses y filtrar respuestas. El evento es el número de secuencia de cada petición — permite al emisor saber qué acuses corresponden a qué mensaje."
+> "Dos conceptos clave del protocolo son la **huella** y el **evento**. La huella es el ID único de cada célula — permite deduplicar acuses y filtrar respuestas. El evento es el número de secuencia de cada petición — permite al emisor saber qué acuses corresponden a qué mensaje."
 
 ---
 
@@ -70,9 +70,9 @@
 
 > "El protocolo de foliado es el mecanismo de entrega garantizada del sistema."
 
-> "Cuando la celda cliente quiere enviar un mensaje, primero le asigna un número de evento único. Luego lo envía a la red y se bloquea esperando recibir un mínimo de acuses de recibo — `minAcks` — de celdas servidoras **distintas**."
+> "Cuando la célula cliente quiere enviar un mensaje, primero le asigna un número de evento único. Luego lo envía a la red y se bloquea esperando recibir un mínimo de acuses de recibo — `minAcks` — de células servidoras **distintas**."
 
-> "La deduplicación es importante: si la misma celda servidora manda dos acuses para el mismo evento, solo cuenta como uno. Esto previene que una celda rápida sature el contador."
+> "La deduplicación es importante: si la misma célula servidora manda dos acuses para el mismo evento, solo cuenta como uno. Esto previene que una célula rápida sature el contador."
 
 > "Solo cuando llegan `minAcks` acuses únicos, el emisor desbloquea y puede enviar el siguiente mensaje. Esto garantiza que los mensajes no se pierden en tránsito."
 
@@ -88,7 +88,7 @@
 
 > "Una de las características más potentes del sistema es la carga dinámica de microservicios."
 
-> "Cuando la celda servidora recibe una petición para un servicio, usa `URLClassLoader` para cargar el JAR correspondiente en tiempo de ejecución. Luego instancia la clase por reflexión y llama al método `execute`."
+> "Cuando la célula servidora recibe una petición para un servicio, usa `URLClassLoader` para cargar el JAR correspondiente en tiempo de ejecución. Luego instancia la clase por reflexión y llama al método `execute`."
 
 > "El contrato es implícito: cualquier clase con un método `public byte[] execute(byte[] input)` puede funcionar como microservicio. No hay interfaces compartidas, no hay dependencias en común."
 
@@ -111,7 +111,7 @@ cd compilados_ejemplo/Node4 && java -jar NODE.jar
 
 [PANTALLA: Terminal — iniciar server cells]
 
-> "Luego iniciamos las celdas servidoras. Desplegamos dos instancias por operación para satisfacer `minAcks=2`."
+> "Luego iniciamos las células servidoras. Desplegamos dos instancias por operación para satisfacer `minAcks=2`."
 
 ```bash
 cd compilados_ejemplo/ServerCell_Suma_1 && java -jar SERVER_CELL.jar
@@ -121,13 +121,13 @@ cd compilados_ejemplo/ServerCell_Suma_2 && java -jar SERVER_CELL.jar
 
 [PANTALLA: Terminal — iniciar CELL y mostrar menú]
 
-> "Finalmente, la celda cliente. Aparece el menú interactivo."
+> "Finalmente, la célula cliente. Aparece el menú interactivo."
 
 > "Seleccionamos Suma, ingresamos los operandos... y en milisegundos recibimos el resultado. El sistema confirmó la entrega con dos acuses de recibo antes de responder."
 
 [PANTALLA: Log mostrando ACKs llegando de dos SERVER_CELLs distintas]
 
-> "En los logs vemos exactamente eso: dos ACKs de celdas servidoras distintas, seguidos de las dos respuestas con el resultado."
+> "En los logs vemos exactamente eso: dos ACKs de células servidoras distintas, seguidos de las dos respuestas con el resultado."
 
 ---
 
@@ -137,9 +137,9 @@ cd compilados_ejemplo/ServerCell_Suma_2 && java -jar SERVER_CELL.jar
 
 > "ADSOA logra lo que ninguna arquitectura cliente-servidor tradicional puede: disponibilidad sin punto único de falla, extensibilidad sin detener el sistema, y entrega garantizada sin coordinador central."
 
-> "La malla se reconecta automáticamente cuando un nodo cae. Los servicios se cargan en caliente. El protocolo de foliado garantiza que los mensajes llegan antes de avanzar."
+> "El campo de datos se reconecta automáticamente cuando un nodo cae. Los servicios se cargan en caliente. El protocolo de foliado garantiza que los mensajes llegan antes de avanzar."
 
-> "Es una arquitectura que escala horizontalmente por diseño: más celdas servidoras significa más disponibilidad y más capacidad de procesamiento, sin cambiar una sola línea de código."
+> "Es una arquitectura que escala horizontalmente por diseño: más células servidoras significa más disponibilidad y más capacidad de procesamiento, sin cambiar una sola línea de código."
 
 > "Gracias."
 
